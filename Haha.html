@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>費用攤分計算器</title>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --primary: #0d6efd;
+    --success: #198754;
+    --danger: #dc3545;
+    --text: #212529;
+    --border: #dee2e6;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 32px 16px 80px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #6c757d;
+    margin-bottom: 32px;
+    font-size: 0.95rem;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .step-indicator {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+  }
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  label { font-weight: 500; font-size: 1.05rem; }
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1.05rem;
+  }
+  button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    width: 100%;
+  }
+  button:hover { opacity: 0.92; }
+  button.secondary { background: #6c757d; }
+  button.outline {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+  }
+  button.small {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+  }
+  .progress {
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    margin: 8px 0 16px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.2s;
+  }
+  .expense-list {
+    margin: 8px 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    background: #fafafa;
+  }
+  .expense-item:last-child { border-bottom: none; }
+  .expense-item .desc { flex: 1; }
+  .expense-item .amt { font-weight: 600; margin-left: 8px; }
+  .expense-item .del {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0 4px;
+    width: auto;
+  }
+  .add-expense {
+    display: flex;
+    gap: 8px;
+  }
+  .add-expense input { flex: 1; }
+  .person-total {
+    text-align: right;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 4px 0 8px;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .summary-item {
+    background: #f1f3f5;
+    padding: 14px 16px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .summary-item strong {
+    display: block;
+    font-size: 1.35rem;
+    color: var(--primary);
+    margin-top: 4px;
+  }
+  .result-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+  }
+  .result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .result-item:last-child { border-bottom: none; }
+  .name { font-weight: 500; }
+  .amount { font-weight: 600; font-size: 1.05rem; }
+  .receive { color: var(--success); }
+  .pay { color: var(--danger); }
+  .zero { color: #6c757d; }
+  .transfer {
+    background: #e7f5ff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .actions button { flex: 1; }
+  .hint {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 6px;
+    text-align: center;
+  }
+  @media (max-width: 480px) {
+    .summary { grid-template-columns: 1fr; }
+    .add-expense { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>費用攤分計算器</h1>
+  <p class="subtitle">露營、聚餐、旅行……任何多人分帳都能用</p>
+
+  <!-- Step 1 -->
+  <div id="step1" class="card">
+    <div class="step-indicator">步驟 1 / 3</div>
+    <div class="controls">
+      <label for="count">這次活動一共幾個人？</label>
+      <input type="number" id="count" min="2" max="30" value="4" placeholder="例如：7">
+      <button onclick="startSetup()">下一步</button>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div id="step2" class="card" style="display:none">
+    <div class="step-indicator">步驟 2 / 3</div>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="controls">
+      <label id="personLabel">參與者 1 的名字</label>
+      <input type="text" id="nameInput" placeholder="輸入名字">
+      
+      <div class="person-total" id="personTotal">已付合計：0.00</div>
+      
+      <div class="expense-list" id="expenseList"></div>
+      
+      <div class="add-expense">
+        <input type="text" id="expDesc" placeholder="項目（可選）" onkeydown="if(event.key==='Enter') addExpense()">
+        <input type="number" id="expAmount" step="0.01" min="0" placeholder="金額" onkeydown="if(event.key==='Enter') addExpense()">
+        <button type="button" class="small" onclick="addExpense()">新增</button>
+      </div>
+      
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="outline" onclick="prevPerson()" id="prevBtn" style="display:none">上一個</button>
+        <button onclick="nextPerson()" style="flex:1">下一個人</button>
+      </div>
+    </div>
+    <p class="hint" id="step2Hint">可新增多筆支出，不用自己加總</p>
+  </div>
+
+  <!-- Step 3 -->
+  <div id="step3" class="card" style="display:none">
+    <div class="step-indicator">步驟 3 / 3 — 結算結果</div>
+    <div class="summary">
+      <div class="summary-item">
+        <span>總支出</span>
+        <strong id="totalAmount">0.00</strong>
+      </div>
+      <div class="summary-item">
+        <span>每人應分攤</span>
+        <strong id="perPerson">0.00</strong>
+      </div>
+    </div>
+
+    <ul class="result-list" id="resultList"></ul>
+    <div id="settlementBox"></div>
+
+    <div class="actions">
+      <button class="secondary" onclick="restart()">重新計算</button>
+      <button onclick="editAll()">修改</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let people = [];
+let currentIndex = 0;
+let totalPeople = 0;
+
+function startSetup() {
+  totalPeople = Math.max(2, Math.min(30, parseInt(document.getElementById("count").value) || 2));
+  people = Array.from({length: totalPeople}, () => ({ name: "", expenses: [] }));
+  currentIndex = 0;
+  showStep(2);
+  loadCurrentPerson();
+}
+
+function loadCurrentPerson() {
+  const p = people[currentIndex];
+  document.getElementById("personLabel").textContent = `參與者 ${currentIndex + 1} / ${totalPeople} 的名字`;
+  document.getElementById("nameInput").value = p.name;
+  document.getElementById("progressBar").style.width = ((currentIndex) / totalPeople * 100) + "%";
+  document.getElementById("prevBtn").style.display = currentIndex === 0 ? "none" : "block";
+  document.getElementById("step2Hint").textContent = 
+    currentIndex === totalPeople - 1 ? "這是最後一位，完成後會顯示結算結果" : "可新增多筆支出，不用自己加總";
+  // Clear pending expense inputs so they don't carry over
+  document.getElementById("expDesc").value = "";
+  document.getElementById("expAmount").value = "";
+  renderExpenses();
+  document.getElementById("nameInput").focus();
+}
+
+function renderExpenses() {
+  const p = people[currentIndex];
+  const list = document.getElementById("expenseList");
+  list.innerHTML = "";
+  let sum = 0;
+  p.expenses.forEach((e, i) => {
+    sum += e.amount;
+    const div = document.createElement("div");
+    div.className = "expense-item";
+    div.innerHTML = `
+      <span class="desc">${escapeHtml(e.desc || "（無項目）")}</span>
+      <span class="amt">${e.amount.toFixed(2)}</span>
+      <button class="del" onclick="removeExpense(${i})">×</button>
+    `;
+    list.appendChild(div);
+  });
+  document.getElementById("personTotal").textContent = `已付合計：${sum.toFixed(2)}`;
+}
+
+function addExpense() {
+  const desc = document.getElementById("expDesc").value.trim();
+  const amount = parseFloat(document.getElementById("expAmount").value) || 0;
+  if (amount <= 0) return;
+  people[currentIndex].expenses.push({ desc, amount });
+  document.getElementById("expDesc").value = "";
+  document.getElementById("expAmount").value = "";
+  document.getElementById("expAmount").focus();
+  renderExpenses();
+}
+
+function removeExpense(i) {
+  people[currentIndex].expenses.splice(i, 1);
+  renderExpenses();
+}
+
+function nextPerson() {
+  people[currentIndex].name = document.getElementById("nameInput").value.trim() || `朋友${currentIndex + 1}`;
+  if (currentIndex < totalPeople - 1) {
+    currentIndex++;
+    loadCurrentPerson();
+  } else {
+    showResults();
+  }
+}
+
+function prevPerson() {
+  if (currentIndex > 0) {
+    people[currentIndex].name = document.getElementById("nameInput").value.trim() || `朋友${currentIndex + 1}`;
+    currentIndex--;
+    loadCurrentPerson();
+  }
+}
+
+function showResults() {
+  // save last name
+  people[currentIndex].name = document.getElementById("nameInput").value.trim() || `朋友${currentIndex + 1}`;
+
+  const totals = people.map(p => ({
+    name: p.name,
+    paid: p.expenses.reduce((s, e) => s + e.amount, 0)
+  }));
+  const total = totals.reduce((s, p) => s + p.paid, 0);
+  const share = total / totalPeople;
+
+  document.getElementById("totalAmount").textContent = total.toFixed(2);
+  document.getElementById("perPerson").textContent = share.toFixed(2);
+
+  const list = document.getElementById("resultList");
+  list.innerHTML = "";
+  const balances = totals.map(p => ({ name: p.name, net: share - p.paid }));
+
+  balances.forEach(b => {
+    const li = document.createElement("li");
+    li.className = "result-item";
+    let label, cls;
+    if (Math.abs(b.net) < 0.01) {
+      label = "剛好";
+      cls = "zero";
+    } else if (b.net > 0) {
+      label = `需再付 ${b.net.toFixed(2)}`;
+      cls = "pay";
+    } else {
+      label = `應收回 ${Math.abs(b.net).toFixed(2)}`;
+      cls = "receive";
+    }
+    li.innerHTML = `<span class="name">${escapeHtml(b.name)}</span><span class="amount ${cls}">${label}</span>`;
+    list.appendChild(li);
+  });
+
+  const settlement = generateSettlement(balances);
+  const box = document.getElementById("settlementBox");
+  if (settlement.length === 0) {
+    box.innerHTML = "<p class='hint' style='margin-top:16px'>大家剛好平均，無需轉帳。</p>";
+  } else {
+    box.innerHTML = `<h3 style="margin:16px 0 10px;font-size:1.05rem">建議轉帳</h3>` +
+      settlement.map(t => `<div class="transfer">${escapeHtml(t.from)} → ${escapeHtml(t.to)}：<strong>${t.amount.toFixed(2)}</strong></div>`).join("");
+  }
+
+  showStep(3);
+}
+
+function generateSettlement(balances) {
+  const debtors = balances.filter(b => b.net > 0.01).map(b => ({...b}));
+  const creditors = balances.filter(b => b.net < -0.01).map(b => ({...b, net: -b.net}));
+  const transfers = [];
+  let i = 0, j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const amount = Math.min(debtors[i].net, creditors[j].net);
+    transfers.push({ from: debtors[i].name, to: creditors[j].name, amount });
+    debtors[i].net -= amount;
+    creditors[j].net -= amount;
+    if (debtors[i].net < 0.01) i++;
+    if (creditors[j].net < 0.01) j++;
+  }
+  return transfers;
+}
+
+function showStep(step) {
+  document.getElementById("step1").style.display = step === 1 ? "block" : "none";
+  document.getElementById("step2").style.display = step === 2 ? "block" : "none";
+  document.getElementById("step3").style.display = step === 3 ? "block" : "none";
+}
+
+function restart() {
+  people = [];
+  currentIndex = 0;
+  totalPeople = 0;
+  document.getElementById("count").value = 4;
+  showStep(1);
+}
+
+function editAll() {
+  currentIndex = totalPeople - 1;
+  showStep(2);
+  loadCurrentPerson();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&':'&','<':'<','>':'>','"':'"',"'":'&#39;'
+  }[m]));
+}
+
+showStep(1);
+</script>
+</body>
+</html>
